@@ -5,6 +5,7 @@ L'objectif est de simuler le comportement de l'algue Chlamydomonas Reinhardtii l
 ## Installation
 Ce programme nécessite Numpy et Pygame, pour les installer:
 
-sudo apt-get install python-numpy
+sudo apt-get install python-numpy.
 sudo apt-get install python-pygame
 
+hgfgh
