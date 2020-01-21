@@ -1,3 +1,3 @@
-## Simulation de l'égragation des Chlamydomonas en Python
+## Simulation de l'agrégation des Chlamydomonas en Python
 
 ## Installation
