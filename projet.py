@@ -19,7 +19,7 @@ font = pygame.font.SysFont("comicsansms", 25)
 sim = phy.Simulation(DIM)
 
 for i in range(100):
-	masse = 1000#np.random.random_sample()*4000
+	masse = 1000 # np.random.random_sample()*4000
 	rayon = int(np.sqrt(masse/np.pi))
 	pos = np.random.rand(2)*(DIM-rayon)+rayon
 	vitesse = np.random.rand(2)*300

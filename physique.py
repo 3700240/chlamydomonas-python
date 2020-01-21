@@ -4,7 +4,7 @@ import numpy as np
 
 COULEUR_PROIE_YOLO = [39, 174, 96] # Vert, la proie vie sa vie
 COULEUR_PROIE_AVERTIE = [241, 196, 15] # Jaune, la proie cherche à agréger
-COULEUR_PREDATEUR = [194, 54, 22] # Rouge
+COULEUR_PREDATEUR = [194, 54, 22] # Rouge, les méchants !!!!
 
 
 
