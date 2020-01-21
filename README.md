@@ -8,3 +8,7 @@ Ce programme nécessite Numpy et Pygame, pour les installer:
 sudo apt-get install python-numpy
 
 sudo apt-get install python-pygame
+
+## Utilisation
+
+python projet.py
