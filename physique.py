@@ -6,7 +6,7 @@ COULEUR_PROIE_YOLO = [39, 174, 96] # Vert, la proie vie sa vie
 COULEUR_PROIE_AVERTIE = [241, 196, 15] # Jaune, la proie cherche à agréger
 COULEUR_PREDATEUR = [194, 54, 22] # Rouge, les méchants !!!!
 
-
+MAX_CELL = 100
 
 dt = 0.01 # Echantillon du temps
 
@@ -54,15 +54,14 @@ class Simulation():
 
 		for cell1 in self.cellsnonagregees:
 			if cell1.proie:
-				cell1.addMasse(1.0)
+				cell1.addMasse(4.0)
 			else:
 				cell1.removeMasse(1.0)
 
-			if not(cell1.agregee):
-				cell1.avancer()
-				for cell2 in self.cells:
-					if cell1 != cell2:
-						self.collision(cell1, cell2)
+			cell1.avancer()
+			for cell2 in self.cells:
+				if cell1 != cell2:
+					self.collision(cell1, cell2)
 
 				if cell1.proie and not(cell1.consciente):
 					for cercle in self.cercles:
@@ -87,11 +86,6 @@ class Simulation():
 				else:
 					offset = dist-(c1.rayon+c2.rayon)
 					c1.addPos((-dpos/dist)*offset/2)
-					print(c1.proie)
-					print(c2.proie)
-					print(-dpos)
-					print(dist)
-					print(c1.pos)
 					c2.addPos((dpos/dist)*offset/2)
 					masse_totale = c1.masse+c2.masse
 					dvitesse1 = -2*c2.masse/masse_totale*np.inner(c1.vitesse-c2.vitesse,c1.pos-c2.pos)/np.sum((c1.pos-c2.pos)**2)*(c1.pos-c2.pos)
@@ -105,13 +99,8 @@ class Simulation():
 					self.addCercle(c1.pos,100)
 				else:
 					offset = dist-(c1.rayon+c2.rayon)
-					c1.addPos((-dpos/dist)*offset/2)
-					c2.addPos((dpos/dist)*offset/2)
-					masse_totale = c1.masse+c2.masse
-					dvitesse1 = -2*c2.masse/masse_totale*np.inner(c1.vitesse-c2.vitesse,c1.pos-c2.pos)/np.sum((c1.pos-c2.pos)**2)*(c1.pos-c2.pos)
-					dvitesse2 = -2*c1.masse/masse_totale*np.inner(c2.vitesse-c1.vitesse,c2.pos-c1.pos)/np.sum((c2.pos-c1.pos)**2)*(c2.pos-c1.pos)
-					c1.addVitesse(dvitesse1)
-					c2.addVitesse(dvitesse2)
+					c1.addPos((-dpos/dist)*offset)
+					c1.addVitesse(-2*c1.vitesse)
 
 
 	def getCercles(self):
@@ -119,6 +108,9 @@ class Simulation():
 
 	def getCells(self): # Méthode GET pour récupérer la liste des cellules simulées
 		return self.cells
+
+	def getNbCells(self):
+		return len(self.cells)
 
 	def getStep(self): # Méthode GET pour récupérer l'étape de la simulation
 		return self.step
@@ -148,11 +140,14 @@ class Cellule():
 	def addMasse(self,masse):
 		self.masse+=masse
 		if(self.masse>2*self.defaultmasse):
-			self.masse = self.masse-self.defaultmasse
-			self.rayon = int(np.sqrt(self.masse/np.pi))
-			c=Cellule(self.sim, self.pos+1, -self.vitesse, self.defaultmasse, self.proie)
-			self.sim.cells.append(c)
-			self.sim.cellsnonagregees.append(c)
+			if len(self.sim.cells)<MAX_CELL:
+				self.masse = self.masse-self.defaultmasse
+				self.rayon = int(np.sqrt(self.masse/np.pi))
+				vitesse=-self.vitesse
+				pos=self.pos+(vitesse/np.sqrt(np.sum(vitesse**2))*self.rayon*2)
+				c=Cellule(self.sim, pos, vitesse, self.defaultmasse, self.proie)
+				self.sim.cells.append(c)
+				self.sim.cellsnonagregees.append(c)
 		else:
 			self.rayon = int(np.sqrt(self.masse/np.pi))
 
