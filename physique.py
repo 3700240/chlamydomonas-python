@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import random
 
 COULEUR_PROIE_YOLO = [39, 174, 96] # Vert, la proie vie sa vie
 COULEUR_PROIE_AVERTIE = [241, 196, 15] # Jaune, la proie cherche à agréger
@@ -18,13 +19,14 @@ class Simulation():
 		self.cells = [] # Liste des cellules simulées
 		self.cellsnonagregees=[]
 		self.cercles = []
+		self.mode=False # 0=pas d'agreg 1=agregation
 
 	def addCell(self, pos, vitesse, masse, proie):
 		c = Cellule(self, pos, vitesse, masse, proie)
 		self.cells.append(c)
 		self.cellsnonagregees.append(c)
 
-	def addCercle(self, centre, rayon, lifespan=300, couleur=[0, 0, 255]): # Fonctionnalité debug
+	def addCercle(self, centre, rayon, lifespan=100, couleur=[0, 0, 255]): # Fonctionnalité debug
 		self.cercles.append(Cercle(centre, rayon, lifespan, couleur))
 
 	def rebondMur(self):
@@ -49,21 +51,21 @@ class Simulation():
 		for cercle in self.cercles:
 			cercle.lifespan-=1
 			# cercle.rayon+=1 Idée intéressante
-			if(cercle.lifespan==0):
+			if(cercle.lifespan<=0):
 				self.cercles.remove(cercle)
 
 		for cell1 in self.cellsnonagregees:
 			if cell1.proie:
 				cell1.addMasse(4.0)
 			else:
-				cell1.removeMasse(1.0)
+				cell1.removeMasse(4.0)
 
 			cell1.avancer()
 			for cell2 in self.cells:
 				if cell1 != cell2:
 					self.collision(cell1, cell2)
 
-				if cell1.proie and not(cell1.consciente):
+				if cell1.proie and not(cell1.consciente) and self.mode:
 					for cercle in self.cercles:
 						if cell1.dansCercle(cercle):
 							cell1.priseDeConscience()
@@ -80,7 +82,7 @@ class Simulation():
 		dist = np.sqrt(np.sum(dpos**2)) # Distance euclidienne entre c1 et c2
 		if dist < c1.rayon+c2.rayon: # Si ils se touchent
 			if c1.proie == c2.proie: # Si du même type, alors collision élastique
-				if c1.proie and (c1.consciente or c2.consciente):
+				if c1.proie and (c1.consciente or c2.consciente) and self.mode==True:
 					c1.agregation()
 					c2.agregation()
 				else:
@@ -92,11 +94,12 @@ class Simulation():
 					dvitesse2 = -2*c1.masse/masse_totale*np.inner(c2.vitesse-c1.vitesse,c2.pos-c1.pos)/np.sum((c2.pos-c1.pos)**2)*(c2.pos-c1.pos)
 					c1.addVitesse(dvitesse1)
 					c2.addVitesse(dvitesse2)
-			elif not(c1.proie) and dist < c1.rayon+(c2.rayon/2): # Si c1 prédateur et si suffisament proche (approx moitie du corps de c2 dans c1) alors c1 mange c2 :)
+			elif not(c1.proie) and dist < c1.rayon+(c2.rayon/10): # Si c1 prédateur et si suffisament proche (approx moitie du corps de c2 dans c1) alors c1 mange c2 :)
 				if not(c2.agregee) and c1.masse>c2.masse:
 					c1.addMasse(c2.masse)
 					self.cells.remove(c2)
-					self.addCercle(c1.pos,100)
+					if self.mode:
+						self.addCercle(c1.pos,100)
 				else:
 					offset = dist-(c1.rayon+c2.rayon)
 					c1.addPos((-dpos/dist)*offset)
@@ -118,6 +121,42 @@ class Simulation():
 	def getTemps(self): # Méthode GET pour récupérer l'étape de la simulation
 		return self.temps
 
+	def changeMode(self):
+		self.mode = not(self.mode)
+
+		self.cercles=[]
+		for cell in self.cells:
+			if cell.agregee:
+				cell.agregee=False
+				cell.consciente=False
+				cell.couleur=COULEUR_PROIE_YOLO
+				cell.vitesse = np.random.rand(2)*300
+		
+		self.cellsnonagregees = self.cells[:]
+
+	def getMode(self):
+		return self.mode
+
+	def randomStress(self):
+		toDo = True
+		while(toDo):
+			cell = random.choice(self.cells)
+			if cell.proie:
+				cell.priseDeConscience()
+				toDo=False
+
+	def wipeAgregats(self):
+		for cell in self.cells:
+			if cell.agregee:
+				cell.agregee=False
+				cell.consciente=False
+				cell.couleur=COULEUR_PROIE_YOLO
+				cell.vitesse = np.random.rand(2)*300
+		
+		self.cellsnonagregees = self.cells[:]
+
+
+
 class Cellule():
 	def __init__(self, sim, pos, vitesse, masse, proie=True):
 		self.sim = sim
@@ -138,27 +177,35 @@ class Cellule():
 		self.pos += self.vitesse*dt;
 
 	def addMasse(self,masse):
-		self.masse+=masse
 		if(self.masse>2*self.defaultmasse):
-			if len(self.sim.cells)<MAX_CELL:
+			if len(self.sim.cells)<MAX_CELL or not(self.proie):
 				self.masse = self.masse-self.defaultmasse
 				self.rayon = int(np.sqrt(self.masse/np.pi))
-				vitesse=-self.vitesse
+				
+				vitesse=np.random.rand(2)*300
+
 				pos=self.pos+(vitesse/np.sqrt(np.sum(vitesse**2))*self.rayon*2)
 				c=Cellule(self.sim, pos, vitesse, self.defaultmasse, self.proie)
 				self.sim.cells.append(c)
 				self.sim.cellsnonagregees.append(c)
 		else:
+			self.masse+=masse
 			self.rayon = int(np.sqrt(self.masse/np.pi))
 
 	def removeMasse(self, masse):
 		self.masse-=masse
-		if self.masse<0:
-			self.sim.cells.remove(self)
-			self.sim.cellsnonagregees.remove(self)
+		if self.proie:
+			if self.masse<0:
+				self.sim.cells.remove(self)
+				self.sim.cellsnonagregees.remove(self)
+			else:
+				self.rayon = int(np.sqrt(self.masse/np.pi))
 		else:
-			self.rayon = int(np.sqrt(self.masse/np.pi))
-
+			if self.masse<1000:
+				self.sim.cells.remove(self)
+				self.sim.cellsnonagregees.remove(self)
+			else:
+				self.rayon = int(np.sqrt(self.masse/np.pi))
 	def addPos(self,pos):
 		self.pos += pos
 
@@ -198,7 +245,7 @@ class Cellule():
 		return self.couleur
 
 class Cercle():
-	def __init__(self, centre, rayon, lifespan = 3000, couleur=[0, 0, 255]):
+	def __init__(self, centre, rayon, lifespan = 100, couleur=[0, 0, 255]):
 		self.centre = np.array(centre)
 		self.rayon = np.array(rayon)
 		self.lifespan = lifespan

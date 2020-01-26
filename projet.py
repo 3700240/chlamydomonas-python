@@ -53,6 +53,11 @@ def display(sim):
 	rect_compteur_cells.topleft = (10,44)
 	screen.blit(compteur_cells, rect_compteur_cells)
 
+	disp_mode = font.render("Agregation : " + str(sim.getMode()) , True, (0, 128, 0))
+	rect_disp_mode = compteur_cells.get_rect()
+	rect_disp_mode.topleft = (10,63)
+	screen.blit(disp_mode, rect_disp_mode)
+
 def displaypause(sim):
 	screen.fill([255, 255, 255])
 	display(sim)
@@ -75,7 +80,7 @@ while(running):
 		if event.type == pygame.MOUSEBUTTONUP:
 			posint = pygame.mouse.get_pos()
 			pos = [float(posint[0]),float(posint[1])]
-			masse = 2000 # np.random.random_sample()*4000
+			masse = 2600 # np.random.random_sample()*4000
 			rayon = int(np.sqrt(masse/np.pi))
 			vitesse = np.random.rand(2)*300
 			sim.addCell(pos, vitesse, masse, False)
@@ -86,6 +91,11 @@ while(running):
 
 			if event.key == pygame.K_SPACE: # PAUSE SIMULATION
 				simulating = not(simulating)
+				if not(simulating):
+					displaypause(sim)
+
+			if event.key == pygame.K_TAB: # PAUSE SIMULATION
+				sim.changeMode()
 				if not(simulating):
 					displaypause(sim)
 
@@ -110,7 +120,16 @@ while(running):
 				sim = phy.Simulation(DIM)
 				if not(simulating):
 					displaypause(sim)
-			
+
+			if event.key == pygame.K_w: # wipe agregats
+				sim.wipeAgregats()
+				if not(simulating):
+					displaypause(sim)
+
+			if event.key == pygame.K_s: # Stress alétoire
+				sim.randomStress()
+				if not(simulating):
+					displaypause(sim)
 			
 
 
